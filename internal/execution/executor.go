@@ -102,10 +102,22 @@ func (e *Executor) buildPodInput(ctx context.Context, comp *apiv1.Composition, s
 	rl := &krmv1.ResourceList{
 		Kind:       krmv1.ResourceListKind,
 		APIVersion: krmv1.SchemeGroupVersion.String(),
+		FunctionConfig: &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"optionalRefs": []string{},
+			},
+		},
 	}
 	revs := []apiv1.InputRevisions{}
 	for _, r := range syn.Spec.Refs {
 		key := r.Key
+
+		// Track all optional refs in FunctionConfig
+		if r.Optional {
+			optRefs, _, _ := unstructured.NestedStringSlice(rl.FunctionConfig.Object, "optionalRefs")
+			optRefs = append(optRefs, key)
+			unstructured.SetNestedStringSlice(rl.FunctionConfig.Object, optRefs, "optionalRefs")
+		}
 
 		// Get the resource
 		start := time.Now()
@@ -134,9 +146,6 @@ func (e *Executor) buildPodInput(ctx context.Context, comp *apiv1.Composition, s
 			anno = map[string]string{}
 		}
 		anno["eno.azure.io/input-key"] = key
-		if r.Optional {
-			anno["eno.azure.io/input-optional"] = "true"
-		}
 		obj.SetAnnotations(anno)
 		rl.Items = append(rl.Items, obj)
 		logger.V(0).Info("retrieved input", "key", key, "latency", time.Since(start).Abs().Milliseconds())

@@ -35,19 +35,23 @@ func NewInputReader(r io.Reader) (*InputReader, error) {
 }
 
 // IsOptional returns true if the input with the given key is marked as optional.
-// This is determined by checking if any input in the ResourceList has the key and
-// the "eno.azure.io/input-optional" annotation set to "true".
+// This is determined by checking the FunctionConfig.optionalRefs list which contains
+// all optional ref keys from the synthesizer spec.
 func (ir *InputReader) IsOptional(key string) bool {
-	for _, item := range ir.resources.Items {
-		if getKey(item) == key {
-			if anno := item.GetAnnotations(); anno != nil {
-				return anno["eno.azure.io/input-optional"] == "true"
-			}
-			return false
+	if ir.resources.FunctionConfig == nil {
+		return false
+	}
+
+	optRefs, found, _ := unstructured.NestedStringSlice(ir.resources.FunctionConfig.Object, "optionalRefs")
+	if !found {
+		return false
+	}
+
+	for _, ref := range optRefs {
+		if ref == key {
+			return true
 		}
 	}
-	// Input not found in ResourceList - check if it might be optional by
-	// looking at FunctionConfig annotations (for future extension)
 	return false
 }
 
