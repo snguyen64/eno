@@ -1017,6 +1017,15 @@ func TestWithOptionalInputs(t *testing.T) {
 				names := []string{rl.Items[0].GetName(), rl.Items[1].GetName()}
 				assert.Contains(t, names, "required-input")
 				assert.Contains(t, names, "optional-input")
+				
+				// Verify the optional annotation is set correctly
+				for _, item := range rl.Items {
+					if item.GetName() == "optional-input" {
+						assert.Equal(t, "true", item.GetAnnotations()["eno.azure.io/input-optional"])
+					} else if item.GetName() == "required-input" {
+						assert.NotEqual(t, "true", item.GetAnnotations()["eno.azure.io/input-optional"])
+					}
+				}
 
 				out := &unstructured.Unstructured{
 					Object: map[string]any{
