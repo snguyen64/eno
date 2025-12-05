@@ -104,6 +104,8 @@ func (e *Executor) buildPodInput(ctx context.Context, comp *apiv1.Composition, s
 		APIVersion: krmv1.SchemeGroupVersion.String(),
 		FunctionConfig: &unstructured.Unstructured{
 			Object: map[string]interface{}{
+				"apiVersion":   "v1",
+				"kind":         "ConfigMap",
 				"optionalRefs": []string{},
 			},
 		},
